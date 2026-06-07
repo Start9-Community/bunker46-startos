@@ -1,16 +1,16 @@
 import { i18n } from './i18n'
 import { sdk } from './sdk'
-import { uiPort } from './utils'
+import { webPort } from './utils'
 
 export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
   const uiMulti = sdk.MultiHost.of(effects, 'ui-multi')
-  const uiMultiOrigin = await uiMulti.bindPort(uiPort, {
+  const uiMultiOrigin = await uiMulti.bindPort(webPort, {
     protocol: 'http',
   })
   const ui = sdk.createInterface(effects, {
     name: i18n('Web UI'),
     id: 'ui',
-    description: i18n('The web interface of Hello World'),
+    description: i18n('The Bunker46 web interface'),
     type: 'ui',
     masked: false,
     schemeOverride: null,

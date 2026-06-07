@@ -2,14 +2,23 @@ export const DEFAULT_LANG = 'en_US'
 
 const dict = {
   // main.ts
-  'Starting Hello World!': 0,
+  'Starting Bunker46': 0,
   'Web Interface': 1,
   'The web interface is ready': 2,
   'The web interface is not ready': 3,
+  Database: 6,
+  'The database is ready': 7,
+  'The database is not ready': 8,
+  Redis: 9,
+  'Redis is ready': 10,
+  'Redis is not ready': 11,
+  'API Server': 12,
+  'The API server is ready': 13,
+  'The API server is not ready': 14,
 
   // interfaces.ts
   'Web UI': 4,
-  'The web interface of Hello World': 5,
+  'The Bunker46 web interface': 5,
 } as const
 
 /**

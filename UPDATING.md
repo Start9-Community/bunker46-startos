@@ -1,17 +1,27 @@
 # Updating the upstream version
 
-This package wraps Start9 Labs' own [hello-world](https://github.com/Start9Labs/hello-world) source, which we build and publish ourselves as `ghcr.io/start9labs/hello-world`. "Upstream" here means that source repo, not the image namespace.
+This package builds [dsbaars/bunker46](https://github.com/dsbaars/bunker46) from a pinned Git commit. Upstream currently publishes no GitHub releases, so "latest" means the latest suitable commit on the default branch.
 
-## Determining the upstream version
+## Determine the latest upstream ref
 
-- **hello-world** ([Start9Labs/hello-world](https://github.com/Start9Labs/hello-world)) — fetch the latest release tag:
+```sh
+git ls-remote https://github.com/dsbaars/bunker46.git refs/heads/main
+```
 
-  ```sh
-  gh release view -R Start9Labs/hello-world --json tagName -q .tagName
-  ```
+Before changing the pin, verify that the candidate still contains the production Dockerfiles, `pnpm-lock.yaml`, `apps/server/prisma/schema.prisma`, and the web/API workspace packages.
 
-  The current pin lives in `startos/manifest/index.ts` at `images['hello-world'].source.dockerTag` (the version after the `:` in `ghcr.io/start9labs/hello-world:<version>`).
+## Apply the bump
 
-## Applying the bump
+1. Update `BUNKER46_REF` in both `Dockerfile.server` and `Dockerfile.web`.
+2. Update `upstream_ref` and related prose in `README.md`.
+3. Update `startos/versions/current.ts` release notes if the upstream behavior changed.
+4. Run:
 
-- Bump `dockerTag` in `startos/manifest/index.ts` to `ghcr.io/start9labs/hello-world:<new version>` (drop the leading `v` from the release tag).
+```sh
+npm ci
+npm run check
+npm run build
+make
+```
+
+If the upstream app changes required environment variables, update `startos/main.ts`, `README.md`, and `instructions.md` together.

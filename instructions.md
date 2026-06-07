@@ -1,25 +1,28 @@
-# Hello World
+# Bunker46
 
-You've installed Hello World — there's nothing to configure and nothing to set up. This page covers how to open the page it serves and where to read more. (If you're a developer, Hello World is also the recommended packaging template.)
-
-## Documentation
-
-- [Hello World upstream docs](https://github.com/Start9Labs/hello-world/blob/master/README.md) — the README for the web server this package runs.
-- [StartOS Packaging Guide](https://docs.start9.com/packaging) — how to build a StartOS service package from that template.
-
-## What you get on StartOS
-
-- **A running web server** that serves a single static page.
-- **Nothing to configure and no actions** — the service starts on its own and is immediately usable.
+Bunker46 is a self-hosted NIP-46 Nostr key manager. It stores your nsec keys encrypted on your StartOS server and signs requests for connected Nostr clients without handing those private keys to every app.
 
 ## Getting set up
 
-There's no setup wizard, no admin password, no first-run prompt — Hello World is usable the moment it starts. To view the page it serves:
+1. Start Bunker46.
+2. Open the **Web UI** interface from the StartOS dashboard.
+3. Register your first Bunker46 user.
+4. Import or create Nostr keys in the Bunker46 web UI.
+5. Create NIP-46 connections and copy the generated `bunker://` or `nostrconnect://` URI into compatible Nostr clients.
 
-1. Open Hello World's **Dashboard** tab.
-2. Click the **Web UI** interface to open the served page in your browser.
+## What StartOS manages
+
+- PostgreSQL data is stored in the service volume.
+- Runtime secrets are generated on install and stored in `store.json` inside the same volume.
+- Redis is started for Bunker46 live dashboard and connection updates.
+- The web interface proxies API requests through the same StartOS interface URL.
+
+## Backups
+
+Back up Bunker46 from the StartOS backup UI. The backup includes the database and the generated encryption/JWT secrets. Restoring both is required for stored nsec keys to remain readable.
 
 ## Limitations
 
-- Hello World is intentionally minimal. It is not a useful service on its own; it exists to demonstrate the StartOS packaging system.
-- The page content is static and cannot be customized through the StartOS UI.
+- New user registration is enabled by default. Manage users from inside Bunker46.
+- Passkeys/WebAuthn may not work on all StartOS interface URLs. A passkey is tied to one exact website address, such as `https://bunker.example.com`. StartOS can expose the same service through several addresses, including a LAN address, a `.local` address, an onion address, and a custom domain. Bunker46 currently expects one fixed passkey address, so a passkey created on one StartOS URL may not work from another StartOS URL. Username/password login, TOTP, and NIP-46 signing do not depend on that passkey setting.
+- Keep the Bunker46 service volume secure. It contains the encrypted key database and the package secrets needed to decrypt it.

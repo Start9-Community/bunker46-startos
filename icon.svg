@@ -1,11 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Bunker46</title>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#4F46E5"/>
-      <stop offset="100%" stop-color="#7C3AED"/>
+    <linearGradient id="wall" x1="96" y1="72" x2="416" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#243B53"/>
+      <stop offset="1" stop-color="#102A43"/>
+    </linearGradient>
+    <linearGradient id="door" x1="174" y1="154" x2="338" y2="404" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D9E2EC"/>
+      <stop offset="1" stop-color="#9FB3C8"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
-  <path d="M256 120c-88.4 0-160 58.1-160 129.8 0 41.4 23.6 78.4 60.5 103.2l-12.9 51.5a8 8 0 0 0 11.6 8.8l62.6-36.1c12.3 2.5 25.2 3.8 38.2 3.8 88.4 0 160-58.1 160-129.8S344.4 120 256 120z" fill="white" opacity="0.95"/>
-  <text x="256" y="270" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="64" fill="#4F46E5">Hello!</text>
+  <rect width="512" height="512" rx="80" fill="#F0F4F8"/>
+  <path d="M104 214c0-68 54-122 122-122h60c68 0 122 54 122 122v202H104V214Z" fill="url(#wall)"/>
+  <path d="M152 224c0-44 36-80 80-80h24c44 0 80 36 80 80v192H152V224Z" fill="#334E68"/>
+  <path d="M184 232c0-36 29-65 65-65h14c36 0 65 29 65 65v184H184V232Z" fill="url(#door)"/>
+  <circle cx="256" cy="300" r="58" fill="#102A43"/>
+  <circle cx="256" cy="300" r="34" fill="#BCCCDC"/>
+  <path d="M256 244v112M200 300h112M216 260l80 80M296 260l-80 80" stroke="#102A43" stroke-width="18" stroke-linecap="round"/>
+  <path d="M160 416h192" stroke="#102A43" stroke-width="24" stroke-linecap="round"/>
 </svg>
