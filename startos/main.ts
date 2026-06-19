@@ -1,3 +1,5 @@
+import { registrations } from './actions/registrations'
+import { storeJson } from './fileModels/store.json'
 import { i18n } from './i18n'
 import { ensureSecrets } from './init/seedFiles'
 import { sdk } from './sdk'
@@ -14,34 +16,42 @@ export const main = sdk.setupMain(async ({ effects }) => {
   console.info(i18n('Starting Bunker46'))
 
   const secrets = await ensureSecrets(effects)
+  const allowRegistration =
+    (await storeJson.read((s) => s.allowRegistration).const(effects)) ?? true
+
+  // While public sign-ups are open, post an important task reminding the user
+  // to lock them down once their own account exists.
+  if (allowRegistration) {
+    await sdk.action.createOwnTask(effects, registrations, 'important', {
+      reason: i18n(
+        'After creating your account in the web UI, run this action to disable open registration.',
+      ),
+    })
+  }
+
   const databaseUrl = `postgresql://${postgresUser}:${secrets.POSTGRES_PASSWORD}@127.0.0.1:${postgresPort}/${postgresDatabase}`
 
   const dbSubcontainer = await sdk.SubContainer.of(
     effects,
     { imageId: 'db' },
     sdk.Mounts.of().mountVolume({
-      volumeId: 'main',
-      subpath: 'postgres',
-      mountpoint: '/var/lib/postgresql/data',
+      volumeId: 'db',
+      subpath: null,
+      mountpoint: '/var/lib/postgresql',
       readonly: false,
     }),
     'bunker46-db',
   )
-  const redisSubcontainer = await sdk.SubContainer.of(
+  const valkeySubcontainer = await sdk.SubContainer.of(
     effects,
-    { imageId: 'redis' },
+    { imageId: 'valkey' },
     null,
-    'bunker46-redis',
+    'bunker46-valkey',
   )
   const serverSubcontainer = await sdk.SubContainer.of(
     effects,
     { imageId: 'server' },
-    sdk.Mounts.of().mountVolume({
-      volumeId: 'main',
-      subpath: null,
-      mountpoint: '/startos',
-      readonly: false,
-    }),
+    null,
     'bunker46-server',
   )
   const webSubcontainer = await sdk.SubContainer.of(
@@ -52,11 +62,10 @@ export const main = sdk.setupMain(async ({ effects }) => {
   )
 
   return sdk.Daemons.of(effects)
-    .addDaemon('database', {
+    .addDaemon('postgres', {
       subcontainer: dbSubcontainer,
       exec: {
-        command: sdk.useEntrypoint(),
-        runAsInit: true,
+        command: sdk.useEntrypoint(['-c', 'listen_addresses=127.0.0.1']),
         env: {
           POSTGRES_USER: postgresUser,
           POSTGRES_PASSWORD: secrets.POSTGRES_PASSWORD,
@@ -64,46 +73,38 @@ export const main = sdk.setupMain(async ({ effects }) => {
         },
       },
       ready: {
-        display: i18n('Database'),
-        fn: () =>
-          sdk.healthCheck.runHealthScript(
-            [
-              'pg_isready',
-              '-h',
-              '127.0.0.1',
-              '-p',
-              String(postgresPort),
-              '-U',
-              postgresUser,
-              '-d',
-              postgresDatabase,
-            ],
-            dbSubcontainer,
-            {
-              timeout: 10_000,
-              message: () => i18n('The database is ready'),
-              errorMessage: i18n('The database is not ready'),
-            },
-          ),
+        display: null,
+        fn: async () => {
+          const { exitCode } = await dbSubcontainer.exec([
+            'pg_isready',
+            '-U',
+            postgresUser,
+            '-d',
+            postgresDatabase,
+            '-h',
+            '127.0.0.1',
+          ])
+          return exitCode === 0
+            ? { result: 'success', message: null }
+            : { result: 'loading', message: null }
+        },
         gracePeriod: 30_000,
       },
       requires: [],
     })
-    .addDaemon('redis', {
-      subcontainer: redisSubcontainer,
-      exec: { command: sdk.useEntrypoint(), runAsInit: true },
+    .addDaemon('valkey', {
+      subcontainer: valkeySubcontainer,
+      exec: {
+        command: ['valkey-server', '--save', '', '--appendonly', 'no'],
+      },
       ready: {
-        display: i18n('Redis'),
-        fn: () =>
-          sdk.healthCheck.runHealthScript(
-            ['redis-cli', '-h', '127.0.0.1', '-p', String(redisPort), 'ping'],
-            redisSubcontainer,
-            {
-              timeout: 10_000,
-              message: () => i18n('Redis is ready'),
-              errorMessage: i18n('Redis is not ready'),
-            },
-          ),
+        display: null,
+        fn: async () => {
+          const res = await valkeySubcontainer.exec(['valkey-cli', 'ping'])
+          return res.stdout.toString().trim() === 'PONG'
+            ? { result: 'success', message: null }
+            : { result: 'failure', message: res.stdout.toString().trim() }
+        },
       },
       requires: [],
     })
@@ -111,7 +112,6 @@ export const main = sdk.setupMain(async ({ effects }) => {
       subcontainer: serverSubcontainer,
       exec: {
         command: sdk.useEntrypoint(),
-        runAsInit: true,
         env: {
           NODE_ENV: 'production',
           PORT: String(apiPort),
@@ -128,7 +128,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
           WEBAUTHN_RP_ID: 'localhost',
           WEBAUTHN_ORIGIN: `http://localhost:${webPort}`,
           LOG_LEVEL: 'info',
-          ALLOW_REGISTRATION: 'true',
+          ALLOW_REGISTRATION: String(allowRegistration),
           TRUST_PROXY: 'true',
         },
       },
@@ -141,11 +141,11 @@ export const main = sdk.setupMain(async ({ effects }) => {
           }),
         gracePeriod: 60_000,
       },
-      requires: ['database', 'redis'],
+      requires: ['postgres', 'valkey'],
     })
     .addDaemon('web', {
       subcontainer: webSubcontainer,
-      exec: { command: sdk.useEntrypoint(), runAsInit: true },
+      exec: { command: sdk.useEntrypoint() },
       ready: {
         display: i18n('Web Interface'),
         fn: () =>

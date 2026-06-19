@@ -35,35 +35,36 @@ This package builds Bunker46 from source using the pinned upstream ref in the pa
 | Image ID | Source | Purpose |
 | --- | --- | --- |
 | `db` | PostgreSQL image from the manifest | Database |
-| `redis` | Redis image from the manifest | Live-update pub/sub used by upstream |
+| `valkey` | Valkey (Redis-compatible) image from the manifest | Live-update pub/sub used by upstream |
 | `server` | Local Docker build | NestJS/Fastify API built from upstream source |
 | `web` | Local Docker build | Vue SPA served by Caddy |
 
 Supported StartOS package architectures are `x86_64` and `aarch64`.
 
-The web container uses `Caddyfile.startos` to proxy `/api` to the API process over the StartOS service network. This replaces upstream Docker Compose service DNS with the StartOS subcontainer network model.
+The four subcontainers share a single network namespace, so they reach each other over `127.0.0.1`. The web container uses `Caddyfile.startos` to serve the SPA and reverse-proxy `/api` to the API process on `127.0.0.1:3000`; the SPA itself calls the API with relative `/api` paths, so the browser, the SPA, and the API are all same-origin behind the StartOS interface URL. This replaces upstream's Docker Compose service DNS with the StartOS subcontainer network model.
 
 ## Volume and Data Layout
 
 | Volume | Path | Purpose |
 | --- | --- | --- |
-| `main` | `/var/lib/postgresql/data` as subpath `postgres` | PostgreSQL data |
-| `main` | `store.json` at volume root | StartOS-managed generated secrets |
+| `db` | mounted at `/var/lib/postgresql`; PostgreSQL writes its data dir under `data/` | PostgreSQL data |
+| `startos` | `store.json` at volume root | StartOS-managed generated secrets |
 
-`store.json` contains the generated PostgreSQL password, JWT secret, refresh-token secret, and Bunker46 encryption key. These values are backed up with the `main` volume and must remain stable for encrypted nsec data to stay readable.
+`store.json` contains the generated PostgreSQL password, JWT secret, refresh-token secret, Bunker46 encryption key, and the registration toggle. The secrets are backed up with the `startos` volume and must remain stable for encrypted nsec data to stay readable. `store.json` is read host-side by StartOS and injected into the API as environment variables — no subcontainer mounts it.
 
 ## Installation and First-Run Flow
 
-1. StartOS initializes the service volume and creates `store.json` if it does not already exist.
+1. StartOS initializes the service volumes and creates `store.json` if it does not already exist.
 2. Stable runtime secrets are generated and preserved across restarts, backups, and restores.
-3. PostgreSQL and Redis start first.
-4. The API starts after the database and Redis are ready, then runs upstream's Prisma schema sync through the upstream server entrypoint.
+3. PostgreSQL and Valkey start first.
+4. The API starts after the database and Valkey are ready, then runs upstream's Prisma schema sync (`prisma db push`) through the upstream server entrypoint.
 5. The web UI starts after the API is listening.
-6. The user opens the Web UI, registers the first Bunker46 user, imports or creates Nostr keys, and creates NIP-46 connections.
+6. The user opens the Web UI and registers their account in Bunker46's own sign-up screen (registration is on by default). An **important** task reminds them to disable open registration afterward.
+7. The user logs in, imports or creates Nostr keys, and creates NIP-46 connections.
 
 ## Configuration Management
 
-There is no StartOS user-facing config screen yet. Bunker46 settings are managed in the upstream web UI.
+There is no StartOS user-facing config screen. Most Bunker46 settings are managed in the upstream web UI. The first account is created through Bunker46's own sign-up screen; password recovery is handled by the **Reset Account Password** action, and open sign-ups are toggled with the **Registrations** action (see [Actions](#actions)).
 
 StartOS supplies these runtime values to the API container:
 
@@ -79,12 +80,12 @@ StartOS supplies these runtime values to the API container:
 | `JWT_REFRESH_EXPIRES_IN` | refresh-token lifetime |
 | `ENCRYPTION_KEY` | generated and persisted in `store.json` |
 | `CORS_ORIGINS` | local web interface origin |
-| `REDIS_URL` | local Redis endpoint |
+| `REDIS_URL` | local Valkey endpoint |
 | `WEBAUTHN_RP_NAME` | Bunker46 |
 | `WEBAUTHN_RP_ID` | localhost |
 | `WEBAUTHN_ORIGIN` | local web interface origin |
 | `LOG_LEVEL` | info |
-| `ALLOW_REGISTRATION` | enabled |
+| `ALLOW_REGISTRATION` | persisted in `store.json`; toggled by the Registrations action (default enabled) |
 | `TRUST_PROXY` | enabled for StartOS proxy headers |
 
 ## Network Access and Interfaces
@@ -97,22 +98,29 @@ Access methods are the standard StartOS interface URLs: LAN IP with unique port,
 
 ## Actions
 
-None.
+| Action | Purpose |
+| --- | --- |
+| Reset Account Password | Generate a new password (shown once) for an existing account, chosen from a dropdown of the current accounts built at run time from the database. Upstream has no forgotten-password flow and passkeys are address-bound, so this is the supported recovery path when a user is locked out. It hashes the new password with the app's own argon2 in a throwaway container and writes it directly to PostgreSQL; no service restart is needed. |
+| Registrations | Enable or disable open new-user sign-ups. The action label and warning update to reflect the current state. The toggle is persisted in `store.json` and applied to the API's `ALLOW_REGISTRATION` (which gates registration in both the backend and the web UI) on the next service start. |
+
+Registration is **enabled by default** so the first account can be created in the web UI. While it is open, an `important` task reminds the user to run **Registrations** (to disable sign-ups) once their own account exists.
 
 ## Backups and Restore
 
-The package backs up the `main` volume. This includes PostgreSQL data and `store.json`.
+The package dumps the PostgreSQL database with `pg_dump` (the `db` volume) and backs up the `startos` volume, which holds `store.json`. StartOS stops the service for the duration of the backup, so the dump runs against a quiescent database.
 
-Restore behavior: the volume is restored before the service starts. The package preserves restored secrets rather than regenerating them.
+Restore behavior: backups are restored before the service starts. The package preserves restored secrets rather than regenerating them. Restoring both the database and `store.json` is required for stored nsec keys to remain readable.
 
 ## Health Checks
 
-| Check | Method | Purpose |
-| --- | --- | --- |
-| Database | `pg_isready` | Confirms PostgreSQL accepts connections |
-| Redis | `redis-cli ping` | Confirms Redis responds |
-| API Server | Port listening | Confirms the API process is accepting connections |
-| Web Interface | Port listening | Confirms the Caddy web UI is accepting connections |
+| Check | Method | Visibility | Purpose |
+| --- | --- | --- | --- |
+| PostgreSQL | `pg_isready` | Internal (hidden) | Startup gate for the API |
+| Valkey | `valkey-cli ping` | Internal (hidden) | Startup gate for the API |
+| API Server | Port listening | Shown | Confirms the API process is accepting connections |
+| Web Interface | Port listening | Shown | Confirms the Caddy web UI is accepting connections |
+
+The PostgreSQL and Valkey checks are internal startup-ordering gates and are hidden from the StartOS health UI; the API Server and Web Interface checks are surfaced to the user.
 
 ## Dependencies
 
@@ -120,15 +128,15 @@ None.
 
 ## Limitations and Differences
 
-1. **No StartOS config screen yet** - registration is enabled by default and managed in the Bunker46 UI.
-2. **Passkeys/WebAuthn need a fixed website address** - a passkey is tied to one exact website address, while StartOS can expose the same service through several addresses. Username/password login, TOTP, and NIP-46 signing do not depend on that passkey setting.
+1. **No StartOS config screen** - settings are managed in the Bunker46 UI; the first account is created in the web UI sign-up, password recovery uses the Reset Account Password action, and open sign-ups use the Registrations action.
+2. **Passkeys/WebAuthn need a fixed website address** - a passkey is tied to one exact website address, while StartOS can expose the same service through several addresses. Username/password login (recoverable with the Reset Account Password action), TOTP, and NIP-46 signing do not depend on that passkey setting.
 3. **Source pin lives in Dockerfiles** - upstream does not publish release tags, so the package Dockerfiles pin a specific upstream ref.
 
 ## What Is Unchanged from Upstream
 
 The NIP-46 protocol implementation, user management, key management, relay settings, connection permissions, signing logs, Prisma schema sync, and web UI are built from upstream source without application-code patches.
 
-The package changes only the StartOS runtime wrapper: manifest metadata, image build definitions, daemon ordering, generated runtime secrets, persistent volume layout, interface export, Caddy API proxy target, backups, and documentation.
+The package changes only the StartOS runtime wrapper: manifest metadata, image build definitions, daemon ordering, generated runtime secrets, persistent volume layout, interface export, Caddy API proxy target, backups, the password-reset and registration actions, and documentation.
 
 ## Contributing
 
@@ -141,20 +149,23 @@ package_id: bunker46
 upstream: https://github.com/dsbaars/bunker46
 architectures: [x86_64, aarch64]
 images:
-  db: manifest dockerTag
-  redis: manifest dockerTag
+  db: manifest dockerTag (postgres)
+  valkey: manifest dockerTag (valkey)
   server: dockerBuild
   web: dockerBuild
 volumes:
-  main:
-    postgres: /var/lib/postgresql/data
-    store_json: generated package secrets
+  db:
+    postgres: /var/lib/postgresql (data under data/)
+  startos:
+    store_json: generated package secrets + registration toggle
 ports:
   ui: 8080
   api: 3000
   postgres: 5432
-  redis: 6379
-actions: none
+  valkey: 6379
+actions:
+  - reset-password  # reset a lost password (dropdown of accounts)
+  - registrations   # toggle open sign-ups (on by default)
 dependencies: none
 startos_managed_env_vars:
   - DATABASE_URL
@@ -162,4 +173,5 @@ startos_managed_env_vars:
   - JWT_REFRESH_SECRET
   - ENCRYPTION_KEY
   - REDIS_URL
+  - ALLOW_REGISTRATION
 ```

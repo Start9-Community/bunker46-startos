@@ -1,40 +1,43 @@
 # Contributing
 
-This repository is a StartOS service package. Read `AGENTS.md`, `TODO.md`, `UPDATING.md`, `README.md`, and `instructions.md` before editing.
+## Keep these in sync
 
-## Local Build
+- **[`README.md`](./README.md)** — what this package is and how it's built (image, volumes, interfaces). Technical reference for developers and AI assistants.
+- **[`instructions.md`](./instructions.md)** — the user-facing instructions packed into the `.s9pk` and shown on the **Instructions** tab in StartOS, for the person running the service.
+- **[`TODO.md`](./TODO.md)** — pending work on this package.
 
-Install dependencies and validate the StartOS TypeScript bundle:
+**Read all three before starting any work.** Any code change that affects user-visible behavior must update `README.md` and `instructions.md` in the same change; add to `TODO.md` when you defer work, and remove items when complete. Content rules: [Writing READMEs](https://docs.start9.com/packaging/writing-readmes.html), [Writing Instructions](https://docs.start9.com/packaging/writing-instructions.html).
 
-```sh
-npm ci
-npm run check
-npm run build
+## Environment setup
+
+See [Environment Setup](https://docs.start9.com/packaging/environment-setup.html)
+
+## Building
+
+```bash
+npm ci    # install dependencies
+make      # build the universal .s9pk
 ```
 
-Build package artifacts:
+For a complete list of build options, see [Makefile](https://docs.start9.com/packaging/makefile.html).
 
-```sh
-make x86
-make arm
-```
+## Updating the upstream version
 
-The package uses the shared StartOS `Makefile`/`s9pk.mk` flow, which runs `start-cli s9pk pack`.
+1. Apply the upstream bump per [UPDATING.md](./UPDATING.md).
+2. Update `version` and `releaseNotes` in `startos/versions/current.ts` — the latest version always lives in that file, so an in-place edit is all most bumps need. A new file is spun off only when the bump requires a migration — see [Versions](https://docs.start9.com/packaging/versions.html).
 
-## Updating Upstream
+## CI/CD
 
-Follow `UPDATING.md`. Keep upstream source pins in the Dockerfiles and keep package metadata in `startos/versions/current.ts`.
+Three workflows under `.github/workflows/` wrap reusable workflows in [`start9labs/shared-workflows`](https://github.com/Start9Labs/shared-workflows):
 
-If behavior changes for users or future maintainers, update `README.md` and `instructions.md` in the same change.
+- **`build.yml`** — on PR, builds the `.s9pk` and uploads per-arch artifacts for sideload testing.
+- **`release.yml`** — on `v*` tag, builds per arch and publishes to the test registry.
+- **`tagAndRelease.yml`** — on push to `master`, tags `v<version>` and runs `release.yml`, skipping if already in production.
 
-## Pre-Publish Checks
+Promotion to `beta` and `prod` is a separate, manual step.
 
-Before publishing or opening a community PR:
+## How to contribute
 
-1. Confirm the release tag matches the StartOS tag convention for the package version.
-2. Run `npm run check`.
-3. Run `npm run build`.
-4. Run the available tests, if a test script exists.
-5. Run `make x86` and `make arm`.
-6. Confirm `README.md` lists all actions, volumes, ports, dependencies, limitations, and StartOS-managed settings.
-7. Confirm the service has been installed and started on StartOS, the UI loads, and health checks are green.
+1. Fork the repository and create a branch from `master`.
+2. Make your changes — including the doc updates above.
+3. Open a pull request to `master`.
