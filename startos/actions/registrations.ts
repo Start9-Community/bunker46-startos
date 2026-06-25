@@ -9,7 +9,7 @@ export const registrations = sdk.Action.withoutInput(
   // metadata
   async ({ effects }) => {
     const allowed =
-      (await storeJson.read((s) => s.allowRegistration).const(effects)) ?? true
+      (await storeJson.read((s) => s.allowRegistration).const(effects)) ?? false
 
     return {
       name: allowed
@@ -36,7 +36,7 @@ export const registrations = sdk.Action.withoutInput(
   // the execution function
   async ({ effects }) => {
     const allowed =
-      (await storeJson.read((s) => s.allowRegistration).once()) ?? true
+      (await storeJson.read((s) => s.allowRegistration).once()) ?? false
 
     await storeJson.merge(effects, { allowRegistration: !allowed })
   },

@@ -1,6 +1,6 @@
 FROM node:24-slim AS base
 
-ARG BUNKER46_REF=ad869f82ad07f13f99be5c434e8ae85311d8a533
+ARG BUNKER46_REF=387d8a6f7b7d5b44ba5a414ed59e96d0e7dd4d89
 
 RUN apt-get update -y \
   && apt-get install -y --no-install-recommends ca-certificates git \

@@ -1,6 +1,6 @@
 FROM node:24-slim AS base
 
-ARG BUNKER46_REF=ad869f82ad07f13f99be5c434e8ae85311d8a533
+ARG BUNKER46_REF=387d8a6f7b7d5b44ba5a414ed59e96d0e7dd4d89
 
 RUN apt-get update -y \
   && apt-get install -y --no-install-recommends ca-certificates git openssl \
@@ -49,8 +49,9 @@ COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
 COPY --from=build /app/apps/server/package.json ./package.json
 COPY --from=build /app/apps/server/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/apps/server/docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh
+COPY startos-server-entrypoint.sh ./startos-server-entrypoint.sh
+RUN chmod 0755 ./docker-entrypoint.sh ./startos-server-entrypoint.sh
 
 USER bunker
 EXPOSE 3000
-ENTRYPOINT ["./docker-entrypoint.sh"]
+ENTRYPOINT ["./startos-server-entrypoint.sh"]
