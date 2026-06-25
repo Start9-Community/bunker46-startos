@@ -43,6 +43,8 @@ Supported StartOS package architectures are `x86_64` and `aarch64`.
 
 The four subcontainers share a single network namespace, so they reach each other over `127.0.0.1`. The web container uses `Caddyfile.startos` to serve the SPA and reverse-proxy `/api` to the API process on `127.0.0.1:3000`; the SPA itself calls the API with relative `/api` paths, so the browser, the SPA, and the API are all same-origin behind the StartOS interface URL. This replaces upstream's Docker Compose service DNS with the StartOS subcontainer network model.
 
+The server container uses a StartOS wrapper entrypoint before upstream's entrypoint. On existing StartOS installs created before upstream adopted Prisma migrations, the wrapper marks upstream's initial Prisma migration as already applied, then lets upstream's `prisma migrate deploy` run the data-preserving migrations. Fresh installs skip the baseline step and run the full upstream migration chain normally.
+
 ## Volume and Data Layout
 
 | Volume | Path | Purpose |
@@ -57,9 +59,9 @@ The four subcontainers share a single network namespace, so they reach each othe
 1. StartOS initializes the service volumes and creates `store.json` if it does not already exist.
 2. Stable runtime secrets are generated and preserved across restarts, backups, and restores.
 3. PostgreSQL and Valkey start first.
-4. The API starts after the database and Valkey are ready, then runs upstream's Prisma schema sync (`prisma db push`) through the upstream server entrypoint.
+4. The API starts after the database and Valkey are ready, then runs upstream's Prisma migrations (`prisma migrate deploy`) through the server entrypoint.
 5. The web UI starts after the API is listening.
-6. The user opens the Web UI and registers their account in Bunker46's own sign-up screen (registration is on by default). An **important** task reminds them to disable open registration afterward.
+6. The user opens the Web UI and creates the first account in Bunker46's own sign-up screen. Registration is off by default, but upstream allows the first account to be created while no accounts exist.
 7. The user logs in, imports or creates Nostr keys, and creates NIP-46 connections.
 
 ## Configuration Management
@@ -85,7 +87,8 @@ StartOS supplies these runtime values to the API container:
 | `WEBAUTHN_RP_ID` | localhost |
 | `WEBAUTHN_ORIGIN` | local web interface origin |
 | `LOG_LEVEL` | info |
-| `ALLOW_REGISTRATION` | persisted in `store.json`; toggled by the Registrations action (default enabled) |
+| `ALLOW_REGISTRATION` | persisted in `store.json`; toggled by the Registrations action (default disabled) |
+| `COOKIE_SECURE` | false, so upstream's httpOnly refresh cookie works on standard StartOS HTTP interface URLs |
 | `TRUST_PROXY` | enabled for StartOS proxy headers |
 
 ## Network Access and Interfaces
@@ -103,7 +106,7 @@ Access methods are the standard StartOS interface URLs: LAN IP with unique port,
 | Reset Account Password | Generate a new password (shown once) for an existing account, chosen from a dropdown of the current accounts built at run time from the database. Upstream has no forgotten-password flow and passkeys are address-bound, so this is the supported recovery path when a user is locked out. It hashes the new password with the app's own argon2 in a throwaway container and writes it directly to PostgreSQL; no service restart is needed. |
 | Registrations | Enable or disable open new-user sign-ups. The action label and warning update to reflect the current state. The toggle is persisted in `store.json` and applied to the API's `ALLOW_REGISTRATION` (which gates registration in both the backend and the web UI) on the next service start. |
 
-Registration is **enabled by default** so the first account can be created in the web UI. While it is open, an `important` task reminds the user to run **Registrations** (to disable sign-ups) once their own account exists.
+Registration is **disabled by default**. The upstream first-account bootstrap path still exposes the sign-up form while no accounts exist, then subsequent new-user registration stays closed unless the user explicitly enables it with **Registrations**.
 
 ## Backups and Restore
 
@@ -134,9 +137,9 @@ None.
 
 ## What Is Unchanged from Upstream
 
-The NIP-46 protocol implementation, user management, key management, relay settings, connection permissions, signing logs, Prisma schema sync, and web UI are built from upstream source without application-code patches.
+The NIP-46 protocol implementation, user management, key management, relay settings, connection permissions, signing logs, Prisma migrations, and web UI are built from upstream source without application-code patches.
 
-The package changes only the StartOS runtime wrapper: manifest metadata, image build definitions, daemon ordering, generated runtime secrets, persistent volume layout, interface export, Caddy API proxy target, backups, the password-reset and registration actions, and documentation.
+The package changes only the StartOS runtime wrapper: manifest metadata, image build definitions, daemon ordering, generated runtime secrets, persistent volume layout, interface export, Caddy API proxy target, upgrade migration baselining, backups, the password-reset and registration actions, and documentation.
 
 ## Contributing
 
@@ -165,7 +168,7 @@ ports:
   valkey: 6379
 actions:
   - reset-password  # reset a lost password (dropdown of accounts)
-  - registrations   # toggle open sign-ups (on by default)
+  - registrations   # toggle open sign-ups (off by default)
 dependencies: none
 startos_managed_env_vars:
   - DATABASE_URL
@@ -174,4 +177,5 @@ startos_managed_env_vars:
   - ENCRYPTION_KEY
   - REDIS_URL
   - ALLOW_REGISTRATION
+  - COOKIE_SECURE
 ```

@@ -1,4 +1,3 @@
-import { registrations } from './actions/registrations'
 import { storeJson } from './fileModels/store.json'
 import { i18n } from './i18n'
 import { ensureSecrets } from './init/seedFiles'
@@ -17,17 +16,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
 
   const secrets = await ensureSecrets(effects)
   const allowRegistration =
-    (await storeJson.read((s) => s.allowRegistration).const(effects)) ?? true
-
-  // While public sign-ups are open, post an important task reminding the user
-  // to lock them down once their own account exists.
-  if (allowRegistration) {
-    await sdk.action.createOwnTask(effects, registrations, 'important', {
-      reason: i18n(
-        'After creating your account in the web UI, run this action to disable open registration.',
-      ),
-    })
-  }
+    (await storeJson.read((s) => s.allowRegistration).const(effects)) ?? false
 
   const databaseUrl = `postgresql://${postgresUser}:${secrets.POSTGRES_PASSWORD}@127.0.0.1:${postgresPort}/${postgresDatabase}`
 
@@ -129,6 +118,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
           WEBAUTHN_ORIGIN: `http://localhost:${webPort}`,
           LOG_LEVEL: 'info',
           ALLOW_REGISTRATION: String(allowRegistration),
+          COOKIE_SECURE: 'false',
           TRUST_PROXY: 'true',
         },
       },

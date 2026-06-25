@@ -6,10 +6,9 @@ Bunker46 is a self-hosted NIP-46 Nostr key manager. It stores your nsec keys enc
 
 1. Start Bunker46.
 2. Open the **Web UI** interface from the StartOS dashboard and register your account on the sign-up screen.
-3. Once your account exists, open the service's **Actions** and run **Disable Registrations** so no one else who can reach your server can sign up. (StartOS posts an important reminder task for this.)
-4. Optionally, enable TOTP in the web UI for two-factor authentication.
-5. Import or create Nostr keys in the Bunker46 web UI.
-6. Create NIP-46 connections and copy the generated `bunker://` or `nostrconnect://` URI into compatible Nostr clients.
+3. Optionally, enable TOTP in the web UI for two-factor authentication.
+4. Import or create Nostr keys in the Bunker46 web UI.
+5. Create NIP-46 connections and copy the generated `bunker://` or `nostrconnect://` URI into compatible Nostr clients.
 
 ## What StartOS manages
 
@@ -17,13 +16,14 @@ Bunker46 is a self-hosted NIP-46 Nostr key manager. It stores your nsec keys enc
 - Runtime secrets are generated on install and stored in `store.json`. They are backed up alongside the database.
 - Valkey (a Redis-compatible cache) is started for Bunker46's live dashboard and connection updates.
 - The web interface proxies API requests through the same StartOS interface URL.
+- New-user registration is kept closed by default after the first account exists.
 
 ## Accounts and registration
 
-New-user registration is **enabled by default** so you can create the first account on the sign-up screen. Disable it (step 3 above) once your account exists so no one else can register.
+New-user registration is **disabled by default**. Bunker46 still shows the sign-up screen while no accounts exist, so you can create the first account during setup. After that, no one else can register unless you enable registrations yourself.
 
 - **Forgot your password?** Run the **Reset Account Password** action, pick your account from the dropdown, and StartOS generates and shows a new password for it. Since passkeys are tied to one web address and may not work across all of your StartOS URLs, this action is your reliable recovery path.
-- **Want to let others sign up?** Run the **Registrations** action to re-enable open sign-ups (run it again to disable). The change takes effect when the service restarts.
+- **Want to let others sign up?** Run the **Registrations** action to enable open sign-ups temporarily (run it again to disable). The change takes effect when the service restarts.
 
 ## Backups
 
