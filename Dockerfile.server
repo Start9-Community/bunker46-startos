@@ -1,6 +1,6 @@
 FROM node:24-slim AS base
 
-ARG BUNKER46_REF=387d8a6f7b7d5b44ba5a414ed59e96d0e7dd4d89
+ARG BUNKER46_REF=1a9c6c3d36d48e4c48b5ea47347fec29b206cdb3
 
 RUN apt-get update -y \
   && apt-get install -y --no-install-recommends ca-certificates git openssl \
