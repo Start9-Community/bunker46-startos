@@ -20,7 +20,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
 
   const databaseUrl = `postgresql://${postgresUser}:${secrets.POSTGRES_PASSWORD}@127.0.0.1:${postgresPort}/${postgresDatabase}`
 
-  const dbSubcontainer = await sdk.SubContainer.of(
+  const dbSubcontainer = sdk.SubContainer.of(
     effects,
     { imageId: 'db' },
     sdk.Mounts.of().mountVolume({
@@ -31,19 +31,19 @@ export const main = sdk.setupMain(async ({ effects }) => {
     }),
     'bunker46-db',
   )
-  const valkeySubcontainer = await sdk.SubContainer.of(
+  const valkeySubcontainer = sdk.SubContainer.of(
     effects,
     { imageId: 'valkey' },
     null,
     'bunker46-valkey',
   )
-  const serverSubcontainer = await sdk.SubContainer.of(
+  const serverSubcontainer = sdk.SubContainer.of(
     effects,
     { imageId: 'server' },
     null,
     'bunker46-server',
   )
-  const webSubcontainer = await sdk.SubContainer.of(
+  const webSubcontainer = sdk.SubContainer.of(
     effects,
     { imageId: 'web' },
     null,
