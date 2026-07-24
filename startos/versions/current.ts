@@ -1,7 +1,7 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.0:3',
+  version: '0.1.0:4',
   releaseNotes: {
     en_US:
       'Updated Bunker46 to the latest upstream build. The server now survives transient relay crashes and adds a restart policy for improved resilience. See the upstream changes: https://github.com/dsbaars/bunker46/compare/387d8a6f7b7d5b44ba5a414ed59e96d0e7dd4d89...1a9c6c3d36d48e4c48b5ea47347fec29b206cdb3. Also includes internal updates for start-sdk 2.0.',
