@@ -32,12 +32,12 @@ This package builds Bunker46 from source using the pinned upstream ref in the pa
 
 ## Image and Container Runtime
 
-| Image ID | Source | Purpose |
-| --- | --- | --- |
-| `db` | PostgreSQL image from the manifest | Database |
-| `valkey` | Valkey (Redis-compatible) image from the manifest | Live-update pub/sub used by upstream |
-| `server` | Local Docker build | NestJS/Fastify API built from upstream source |
-| `web` | Local Docker build | Vue SPA served by Caddy |
+| Image ID | Source                                            | Purpose                                       |
+| -------- | ------------------------------------------------- | --------------------------------------------- |
+| `db`     | PostgreSQL image from the manifest                | Database                                      |
+| `valkey` | Valkey (Redis-compatible) image from the manifest | Live-update pub/sub used by upstream          |
+| `server` | Local Docker build                                | NestJS/Fastify API built from upstream source |
+| `web`    | Local Docker build                                | Vue SPA served by Caddy                       |
 
 Supported StartOS package architectures are `x86_64` and `aarch64`.
 
@@ -47,10 +47,10 @@ The server container uses a StartOS wrapper entrypoint before upstream's entrypo
 
 ## Volume and Data Layout
 
-| Volume | Path | Purpose |
-| --- | --- | --- |
-| `db` | mounted at `/var/lib/postgresql`; PostgreSQL writes its data dir under `data/` | PostgreSQL data |
-| `startos` | `store.json` at volume root | StartOS-managed generated secrets |
+| Volume    | Path                                                                           | Purpose                           |
+| --------- | ------------------------------------------------------------------------------ | --------------------------------- |
+| `db`      | mounted at `/var/lib/postgresql`; PostgreSQL writes its data dir under `data/` | PostgreSQL data                   |
+| `startos` | `store.json` at volume root                                                    | StartOS-managed generated secrets |
 
 `store.json` contains the generated PostgreSQL password, JWT secret, refresh-token secret, Bunker46 encryption key, and the registration toggle. The secrets are backed up with the `startos` volume and must remain stable for encrypted nsec data to stay readable. `store.json` is read host-side by StartOS and injected into the API as environment variables — no subcontainer mounts it.
 
@@ -70,41 +70,41 @@ There is no StartOS user-facing config screen. Most Bunker46 settings are manage
 
 StartOS supplies these runtime values to the API container:
 
-| Variable | Source / Value |
-| --- | --- |
-| `NODE_ENV` | production |
-| `PORT` | API port |
-| `HOST` | all container interfaces |
-| `DATABASE_URL` | generated PostgreSQL password and local database endpoint |
-| `JWT_SECRET` | generated and persisted in `store.json` |
-| `JWT_EXPIRES_IN` | access-token lifetime |
-| `JWT_REFRESH_SECRET` | generated and persisted in `store.json` |
-| `JWT_REFRESH_EXPIRES_IN` | refresh-token lifetime |
-| `ENCRYPTION_KEY` | generated and persisted in `store.json` |
-| `CORS_ORIGINS` | local web interface origin |
-| `REDIS_URL` | local Valkey endpoint |
-| `WEBAUTHN_RP_NAME` | Bunker46 |
-| `WEBAUTHN_RP_ID` | localhost |
-| `WEBAUTHN_ORIGIN` | local web interface origin |
-| `LOG_LEVEL` | info |
-| `ALLOW_REGISTRATION` | persisted in `store.json`; toggled by the Registrations action (default disabled) |
-| `COOKIE_SECURE` | false, so upstream's httpOnly refresh cookie works on standard StartOS HTTP interface URLs |
-| `TRUST_PROXY` | enabled for StartOS proxy headers |
+| Variable                 | Source / Value                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| `NODE_ENV`               | production                                                                                 |
+| `PORT`                   | API port                                                                                   |
+| `HOST`                   | all container interfaces                                                                   |
+| `DATABASE_URL`           | generated PostgreSQL password and local database endpoint                                  |
+| `JWT_SECRET`             | generated and persisted in `store.json`                                                    |
+| `JWT_EXPIRES_IN`         | access-token lifetime                                                                      |
+| `JWT_REFRESH_SECRET`     | generated and persisted in `store.json`                                                    |
+| `JWT_REFRESH_EXPIRES_IN` | refresh-token lifetime                                                                     |
+| `ENCRYPTION_KEY`         | generated and persisted in `store.json`                                                    |
+| `CORS_ORIGINS`           | local web interface origin                                                                 |
+| `REDIS_URL`              | local Valkey endpoint                                                                      |
+| `WEBAUTHN_RP_NAME`       | Bunker46                                                                                   |
+| `WEBAUTHN_RP_ID`         | localhost                                                                                  |
+| `WEBAUTHN_ORIGIN`        | local web interface origin                                                                 |
+| `LOG_LEVEL`              | info                                                                                       |
+| `ALLOW_REGISTRATION`     | persisted in `store.json`; toggled by the Registrations action (default disabled)          |
+| `COOKIE_SECURE`          | false, so upstream's httpOnly refresh cookie works on standard StartOS HTTP interface URLs |
+| `TRUST_PROXY`            | enabled for StartOS proxy headers                                                          |
 
 ## Network Access and Interfaces
 
-| Interface | Port | Protocol | Purpose |
-| --- | ---: | --- | --- |
-| Web UI | 8080 | HTTP | Bunker46 dashboard and API proxy |
+| Interface | Port | Protocol | Purpose                          |
+| --------- | ---: | -------- | -------------------------------- |
+| Web UI    | 8080 | HTTP     | Bunker46 dashboard and API proxy |
 
 Access methods are the standard StartOS interface URLs: LAN IP with unique port, mDNS hostname, Tor onion, or custom domain if configured.
 
 ## Actions
 
-| Action | Purpose |
-| --- | --- |
+| Action                 | Purpose                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Reset Account Password | Generate a new password (shown once) for an existing account, chosen from a dropdown of the current accounts built at run time from the database. Upstream has no forgotten-password flow and passkeys are address-bound, so this is the supported recovery path when a user is locked out. It hashes the new password with the app's own argon2 in a throwaway container and writes it directly to PostgreSQL; no service restart is needed. |
-| Registrations | Enable or disable open new-user sign-ups. The action label and warning update to reflect the current state. The toggle is persisted in `store.json` and applied to the API's `ALLOW_REGISTRATION` (which gates registration in both the backend and the web UI) on the next service start. |
+| Registrations          | Enable or disable open new-user sign-ups. The action label and warning update to reflect the current state. The toggle is persisted in `store.json` and applied to the API's `ALLOW_REGISTRATION` (which gates registration in both the backend and the web UI) on the next service start.                                                                                                                                                    |
 
 Registration is **disabled by default**. The upstream first-account bootstrap path still exposes the sign-up form while no accounts exist, then subsequent new-user registration stays closed unless the user explicitly enables it with **Registrations**.
 
@@ -116,12 +116,12 @@ Restore behavior: backups are restored before the service starts. The package pr
 
 ## Health Checks
 
-| Check | Method | Visibility | Purpose |
-| --- | --- | --- | --- |
-| PostgreSQL | `pg_isready` | Internal (hidden) | Startup gate for the API |
-| Valkey | `valkey-cli ping` | Internal (hidden) | Startup gate for the API |
-| API Server | Port listening | Shown | Confirms the API process is accepting connections |
-| Web Interface | Port listening | Shown | Confirms the Caddy web UI is accepting connections |
+| Check         | Method            | Visibility        | Purpose                                            |
+| ------------- | ----------------- | ----------------- | -------------------------------------------------- |
+| PostgreSQL    | `pg_isready`      | Internal (hidden) | Startup gate for the API                           |
+| Valkey        | `valkey-cli ping` | Internal (hidden) | Startup gate for the API                           |
+| API Server    | Port listening    | Shown             | Confirms the API process is accepting connections  |
+| Web Interface | Port listening    | Shown             | Confirms the Caddy web UI is accepting connections |
 
 The PostgreSQL and Valkey checks are internal startup-ordering gates and are hidden from the StartOS health UI; the API Server and Web Interface checks are surfaced to the user.
 
@@ -143,7 +143,7 @@ The package changes only the StartOS runtime wrapper: manifest metadata, image b
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for local build, validation, versioning, and release workflow notes.
+Build and development workflow follow the StartOS packaging guide: <https://docs.start9.com/packaging>. Keep `README.md`, `instructions.md`, and `AGENTS.md` in sync with any change to user-visible behavior or package structure.
 
 ## Quick Reference for AI Consumers
 
@@ -167,8 +167,8 @@ ports:
   postgres: 5432
   valkey: 6379
 actions:
-  - reset-password  # reset a lost password (dropdown of accounts)
-  - registrations   # toggle open sign-ups (off by default)
+  - reset-password # reset a lost password (dropdown of accounts)
+  - registrations # toggle open sign-ups (off by default)
 dependencies: none
 startos_managed_env_vars:
   - DATABASE_URL
