@@ -2,11 +2,15 @@
 
 Bunker46 is a self-hosted NIP-46 Nostr key manager. It stores your nsec keys encrypted on your StartOS server and signs requests for connected Nostr clients without handing those private keys to every app.
 
+## Documentation
+
+- [Bunker46 on GitHub](https://github.com/dsbaars/bunker46) — the upstream project: what NIP-46 signing does, and the application's own guide.
+
 ## Getting set up
 
 1. Start Bunker46.
 2. Open the **Web UI** interface from the StartOS dashboard and register your account on the sign-up screen.
-3. Optionally, enable TOTP in the web UI for two-factor authentication.
+3. Optionally, enable TOTP in the web UI for two-factor authentication. Passkeys are tied to one web address and are not reliable here — see below.
 4. Import or create Nostr keys in the Bunker46 web UI.
 5. Create NIP-46 connections and copy the generated `bunker://` or `nostrconnect://` URI into compatible Nostr clients.
 

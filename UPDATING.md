@@ -12,7 +12,8 @@ Before changing the pin, verify that the candidate still contains the production
 
 ## Apply the bump
 
-1. Update `BUNKER46_REF` in both `Dockerfile.server` and `Dockerfile.web`.
+1. Update `BUNKER46_REF` in both `Dockerfile.server` and `Dockerfile.web` — the
+   server and web halves must stay on the same commit.
 2. Update `upstream_ref` and related prose in `README.md`.
 3. Update `startos/versions/current.ts` release notes if the upstream behavior changed.
 4. Run:

@@ -6,12 +6,11 @@ Develop it inside a StartOS packaging workspace created by `start-cli s9pk init-
 which provides the packaging guide and agent context one level up. If you're reading this in a
 bare clone with no workspace, the full guide is at <https://docs.start9.com/packaging>.
 
-Work this package's `TODO.md` from top to bottom. Keep `README.md` (architecture, for developers and LLMs) and `instructions.md` (end-user docs) in sync with your changes.
+Work this package's `TODO.md` from top to bottom. Keep `README.md` (technical reference for an AI support or administering agent) and `instructions.md` (end-user docs) in sync with your changes.
 
 ## This repo
 
-- **Package id is `bunker46`.** Self-hosted NIP-46 Nostr key manager. Four daemons in `main.ts`: `postgres` (bundled Postgres, subcontainer `bunker46-db`), `valkey` (Redis-compatible cache, `bunker46-valkey`), `server` (the API server, `bunker46-server`), and `web` (the web UI, `bunker46-web`). Exposes a single `ui` interface; no dependents. Secrets (Postgres password, JWT/encryption keys) are generated once and persisted in `store.json`. Postgres is backed up via `Backups.withPgDump`.
-
-## Inspecting a running install
-
-To run a command inside the service's container (read its generated config, grep app logs), use `start-cli package attach bunker46 -n <name> -- <cmd>`. Select the subcontainer by **name** with `-n` (the name passed to `SubContainer.of` in `main.ts` — e.g. `bunker46-server`, `bunker46-db`, `bunker46-web`, `bunker46-valkey`) or by image with `-i`. Note: `-s/--subcontainer` matches the internal **Guid**, not the name, so passing a name to `-s` fails with "no matching subcontainers".
+- **`startos-server-entrypoint.sh` baselines a pre-migrations database and must run before the app's own entrypoint.** It marks the initial migration applied when it finds a `users` table with no matching migration row; without it, an install that predates migrations gets the initial schema replayed over live data.
+- **`WEBAUTHN_RP_ID`/`WEBAUTHN_ORIGIN`/`CORS_ORIGINS` are pinned to loopback.** That is correct for the same-origin API proxy but wrong for passkeys, which bind to the address the browser actually used — a real fix means deriving them from the service's primary URL, not widening CORS.
+- **Postgres is started with an explicit `listen_addresses=127.0.0.1`.** It shares the service network namespace with the other subcontainers, and nothing else should be able to reach it.
+- **`reset-password` hashes with the application's own argon2, in a throwaway `server` container.** `argon2.verify` reads its parameters out of the hash string, so a hash produced any other way may look right and fail to validate. Don't reimplement the hashing here.

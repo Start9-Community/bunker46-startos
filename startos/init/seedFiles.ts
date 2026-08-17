@@ -10,7 +10,11 @@ export type Bunker46Secrets = {
   ENCRYPTION_KEY: string
 }
 
-export async function ensureSecrets(effects: T.Effects): Promise<Bunker46Secrets> {
+// Called from main as well as init, deliberately: a secret deleted by hand is
+// regenerated rather than leaving the server with an empty env var.
+export async function ensureSecrets(
+  effects: T.Effects,
+): Promise<Bunker46Secrets> {
   const current = await storeJson.read().once()
   const next: Bunker46Secrets = {
     POSTGRES_PASSWORD: current?.POSTGRES_PASSWORD ?? getDefaultSecret(),
