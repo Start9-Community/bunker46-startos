@@ -1,0 +1,49 @@
+diff --git a/apps/server/src/common/process-guards.spec.ts b/apps/server/src/common/process-guards.spec.ts
+index bce4653..5b31c37 100644
+--- a/apps/server/src/common/process-guards.spec.ts
++++ b/apps/server/src/common/process-guards.spec.ts
+@@ -9,6 +9,19 @@ describe('process-guards', () => {
+       expect(isTransientRelayError(err)).toBe(true);
+     });
+ 
++    it('matches a ws handshake timeout from the nostr-tools connection timer', () => {
++      const err = new Error('WebSocket was closed before the connection was established');
++      err.stack += '\n    at Timeout._onTimeout (/app/node_modules/nostr-tools/lib/cjs/pool.js:353:27)';
++      expect(isTransientRelayError(err)).toBe(true);
++    });
++
++    it('does not swallow the same WebSocket error outside the relay connection timer', () => {
++      const err = new Error('WebSocket was closed before the connection was established');
++      expect(isTransientRelayError(err)).toBe(false);
++      err.stack += '\n    at Timeout._onTimeout (/app/another-websocket.js:353:27)';
++      expect(isTransientRelayError(err)).toBe(false);
++    });
++
+     it('rejects unrelated errors and non-Error values', () => {
+       expect(isTransientRelayError(new Error('real bug'))).toBe(false);
+       expect(isTransientRelayError('SendingOnClosedConnection')).toBe(false);
+diff --git a/apps/server/src/common/process-guards.ts b/apps/server/src/common/process-guards.ts
+index 9f3b0f3..2a85099 100644
+--- a/apps/server/src/common/process-guards.ts
++++ b/apps/server/src/common/process-guards.ts
+@@ -10,7 +10,19 @@ import { Logger } from '@nestjs/common';
+  * after.
+  */
+ export function isTransientRelayError(err: unknown): boolean {
+-  return err instanceof Error && err.name === 'SendingOnClosedConnection';
++  if (!(err instanceof Error)) return false;
++  if (err.name === 'SendingOnClosedConnection') return true;
++
++  // nostr-tools closes a still-connecting ws socket when its connection timer expires.
++  // ws emits an asynchronous error after that timer has already dropped the relay;
++  // the watchdog retries it. Match both the message and timer stack so unrelated
++  // WebSocket failures retain the fatal path.
++  return (
++    err.message === 'WebSocket was closed before the connection was established' &&
++    /at Timeout\._onTimeout \(.*\/nostr-tools\/lib\/(?:cjs|esm)\/(?:pool|abstract-relay)\.js:\d+:\d+\)/.test(
++      err.stack ?? '',
++    )
++  );
+ }
+ 
+ type ExitFn = (code: number) => void;

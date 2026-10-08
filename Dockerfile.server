@@ -1,7 +1,5 @@
 FROM node:24-slim AS base
 
-ARG BUNKER46_REF=1a9c6c3d36d48e4c48b5ea47347fec29b206cdb3
-
 RUN apt-get update -y \
   && apt-get install -y --no-install-recommends ca-certificates git openssl \
   && rm -rf /var/lib/apt/lists/*
@@ -9,11 +7,9 @@ RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
 WORKDIR /app
 
 FROM base AS source
-RUN git init . \
-  && git remote add origin https://github.com/dsbaars/bunker46.git \
-  && git fetch --depth 1 origin "${BUNKER46_REF}" \
-  && git checkout --detach FETCH_HEAD \
-  && rm -rf .git
+COPY upstream-project/ ./
+COPY patches/ /patches/
+RUN git apply --check /patches/*.patch && git apply /patches/*.patch
 
 FROM base AS deps
 COPY --from=source /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json /app/.npmrc ./
@@ -36,7 +32,8 @@ WORKDIR /app/apps/server
 ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 RUN pnpm exec prisma generate
 WORKDIR /app
-RUN pnpm --filter @bunker46/server... run build
+RUN pnpm --filter @bunker46/server... run build \
+  && pnpm --filter @bunker46/server exec vitest run src/common/process-guards.spec.ts
 
 FROM base AS production
 RUN addgroup --system --gid 1001 bunker \

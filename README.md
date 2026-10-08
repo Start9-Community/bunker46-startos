@@ -50,7 +50,9 @@ Four images: two upstream datastores, and the application's server and web halve
 | `bunker46-server` | `server` | The API — attach here for application logs           |
 | `bunker46-web`    | `web`    | Caddy, serving the app and proxying the API          |
 
-**Upstream is fetched at build time by commit, not by tag.** The build clones the pinned reference rather than vendoring it, so what ships is decided by a build argument in the server and web Dockerfiles.
+**Upstream is pinned by a Git submodule commit.** Both Dockerfiles build from `upstream-project`, so the server and web halves share one source pin. Run `git submodule update --init` before building. The server applies the carried patches documented in `patches/README.md` and runs the upstream process-guard regression tests during its image build.
+
+**Relay handshake timeouts do not restart the API server.** A carried patch lets the existing relay watchdog recover from a timed-out WebSocket handshake. Unrelated application exceptions still terminate the API server so StartOS can restart it.
 
 **The server's entrypoint baselines an existing database before starting.** It looks for a `users` table with no matching migration record and, if it finds one, marks the initial migration as already applied. That exists so a database created before the package adopted migrations is not re-migrated over the top of live data — a check on every start, not a one-time step.
 
@@ -77,7 +79,7 @@ One model, and it is the package's whole secret store.
 | ------------ | ------ | ----------------------- | ---------------------------- |
 | `store.json` | JSON   | Yes — `FileHelper.json` | Init, `main`, and one action |
 
-It holds four generated secrets — the database password, two JWT signing secrets, and the application's **encryption key** — plus one setting, whether new-user registration is permitted.
+It models four generated secrets — the database password, two JWT signing secrets, and the application's **encryption key** — plus one setting, whether new-user registration is permitted. Unknown fields are preserved when secrets are seeded or registration settings change.
 
 **The encryption key is the one that matters.** It is what the application encrypts stored Nostr keys with, so `store.json` and the database are two halves of one secret: either alone recovers nothing. Both are in the backup, which is what makes a restore work and what makes the backup sensitive.
 

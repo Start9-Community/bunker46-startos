@@ -19,6 +19,7 @@ Bunker46 is a self-hosted NIP-46 Nostr key manager. It stores your nsec keys enc
 - PostgreSQL data is stored in a dedicated service volume.
 - Runtime secrets are generated on install and stored in `store.json`. They are backed up alongside the database.
 - Valkey (a Redis-compatible cache) is started for Bunker46's live dashboard and connection updates.
+- If a relay connection times out during its handshake, Bunker46 keeps the web interface running and retries the relay automatically.
 - The web interface proxies API requests through the same StartOS interface URL.
 - New-user registration is kept closed by default after the first account exists.
 
