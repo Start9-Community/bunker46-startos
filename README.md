@@ -156,7 +156,7 @@ Four checks, two of them shown.
 
 The API server's 60 seconds covers database migrations on first start, which is when it is slowest.
 
-**PostgreSQL reports `loading` rather than failure while it comes up**, so a slow database start does not restart the service; the cache reports failure outright, since a cache that does not answer a ping is not merely slow.
+**PostgreSQL reports `starting` until it accepts connections**, keeping the API server behind its database readiness check while PostgreSQL initializes; the cache reports failure when it does not answer a ping.
 
 A service restarting with no failing check displayed is one of the two internal sidecars — the service logs name it.
 
