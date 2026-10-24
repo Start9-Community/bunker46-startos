@@ -75,7 +75,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
           ])
           return exitCode === 0
             ? { result: 'success', message: null }
-            : { result: 'loading', message: null }
+            : { result: 'starting', message: null }
         },
         gracePeriod: 30_000,
       },
