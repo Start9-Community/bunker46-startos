@@ -21,4 +21,15 @@ Before changing the pin, verify that the candidate still contains the production
    reset it to `:0` when the upstream version changes. The exact source pin lives
    in the submodule gitlink, not in `README.md`.
 
+## Sidecar images
+
+`images.postgres` and `images.valkey` in `startos/manifest/index.ts` are pinned to exact tags. Bring each to the newest tag in its major: `postgres:17.<minor>-alpine` and `valkey/valkey:8.<minor>.<patch>-alpine`. A Postgres major bump needs a data migration.
+
+```sh
+curl -fsSL "https://hub.docker.com/v2/repositories/library/postgres/tags?page_size=50&name=17.&ordering=last_updated" \
+  | jq -r '.results[].name' | grep -E '^17\.[0-9]+-alpine$' | head
+curl -fsSL "https://hub.docker.com/v2/repositories/valkey/valkey/tags?page_size=50&name=8.&ordering=last_updated" \
+  | jq -r '.results[].name' | grep -E '^8\.[0-9]+\.[0-9]+-alpine$' | head
+```
+
 If the upstream app changes required environment variables, update `startos/main.ts`, `README.md`, and `instructions.md` together.

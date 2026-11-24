@@ -1,18 +1,18 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.1.0:8',
+  version: '0.1.0:9',
   releaseNotes: {
     en_US:
-      "Fixes memory use growing while the service runs, and keeps the database password out of the server's process list. Requires StartOS 0.4.1 or later.",
+      "The bundled Valkey cache accepts connections from Bunker46 alone, and the service's health checks respond faster. Requires StartOS 0.4.2 or newer.",
     es_ES:
-      'Corrige el aumento del uso de memoria mientras el servicio está en ejecución y evita que la contraseña de la base de datos aparezca en la lista de procesos del servidor. Requiere StartOS 0.4.1 o posterior.',
+      'La caché Valkey incluida solo acepta conexiones de Bunker46, y las comprobaciones de estado del servicio responden más rápido. Requiere StartOS 0.4.2 o posterior.',
     de_DE:
-      'Behebt den wachsenden Speicherverbrauch während der Dienst läuft und hält das Datenbankpasswort aus der Prozessliste des Servers heraus. Erfordert StartOS 0.4.1 oder neuer.',
+      'Der mitgelieferte Valkey-Cache nimmt nur Verbindungen von Bunker46 an, und die Zustandsprüfungen des Dienstes reagieren schneller. Erfordert StartOS 0.4.2 oder neuer.',
     pl_PL:
-      'Naprawia rosnące zużycie pamięci podczas działania usługi i usuwa hasło bazy danych z listy procesów serwera. Wymaga StartOS 0.4.1 lub nowszego.',
+      'Dołączona pamięć podręczna Valkey przyjmuje połączenia wyłącznie od Bunker46, a sprawdzanie stanu usługi reaguje szybciej. Wymaga StartOS 0.4.2 lub nowszego.',
     fr_FR:
-      'Corrige l’augmentation de la consommation de mémoire pendant le fonctionnement du service et retire le mot de passe de la base de données de la liste des processus du serveur. Nécessite StartOS 0.4.1 ou version ultérieure.',
+      "Le cache Valkey intégré n'accepte les connexions que de Bunker46, et les contrôles de santé du service réagissent plus vite. Nécessite StartOS 0.4.2 ou une version ultérieure.",
   },
   migrations: {
     up: async ({ effects }) => {},

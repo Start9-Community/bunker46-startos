@@ -13,11 +13,11 @@ export const manifest = setupManifest({
   volumes: ['startos', 'db'],
   images: {
     db: {
-      source: { dockerTag: 'postgres:17-alpine' },
+      source: { dockerTag: 'postgres:17.12-alpine' },
       arch: ['x86_64', 'aarch64'],
     },
     valkey: {
-      source: { dockerTag: 'valkey/valkey:8-alpine' },
+      source: { dockerTag: 'valkey/valkey:8.1.12-alpine' },
       arch: ['x86_64', 'aarch64'],
     },
     server: {

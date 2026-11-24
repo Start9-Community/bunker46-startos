@@ -101,7 +101,7 @@ One interface. Everything else is loopback inside the service.
 | --------- | ---- | ---- | ---- | -------------------------- |
 | Web UI    | `ui` | ui   | 8080 | The Bunker46 web interface |
 
-Bound on the `ui-multi` MultiHost over HTTP and not masked. The API on 3000, PostgreSQL on 5432, and Valkey on 6379 are never exported; PostgreSQL is additionally started with an explicit loopback listen address, so it is unreachable even from elsewhere in the service network.
+Bound on the `ui-multi` MultiHost over HTTP and not masked. The API on 3000, PostgreSQL on 5432, and Valkey on 6379 are never exported; PostgreSQL and Valkey are additionally started on loopback listen addresses, so they are unreachable even from elsewhere in the service network.
 
 **The application's origin settings are pinned to loopback**, not to the address the user reaches. That is fine for the API, which is proxied same-origin by Caddy, but it has a consequence for WebAuthn — see [Limitations](#limitations-and-differences).
 
