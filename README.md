@@ -105,6 +105,8 @@ Bound on the `ui-multi` MultiHost over HTTP and not masked. The API on 3000, Pos
 
 **The application's origin settings are pinned to loopback**, not to the address the user reaches. That is fine for the API, which is proxied same-origin by Caddy, but it has a consequence for WebAuthn — see [Limitations](#limitations-and-differences).
 
+Bunker46 stores its refresh token in an HttpOnly cookie scoped to `/api/auth`. Browser cookie scope uses the hostname and path, so another service on the same StartOS hostname can receive that cookie on a matching path even when it uses a different port. Configure a dedicated hostname for Bunker46 to isolate the cookie. [StartOS interface guidance](https://docs.start9.com/start-os/interfaces.html#shared-addresses-and-browser-cookies)
+
 ## Installation and First-Run Flow
 
 Install generates the four secrets and nothing else. There is no task, no wizard, and no credential to record — the user creates their own account in the web interface.

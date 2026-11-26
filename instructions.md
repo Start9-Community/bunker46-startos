@@ -14,6 +14,8 @@ Bunker46 is a self-hosted NIP-46 Nostr key manager. It stores your nsec keys enc
 4. Import or create Nostr keys in the Bunker46 web UI.
 5. Create NIP-46 connections and copy the generated `bunker://` or `nostrconnect://` URI into compatible Nostr clients.
 
+For everyday use, open the **Web UI** at a hostname dedicated to Bunker46. This keeps your Bunker46 sign-in cookie separate from other StartOS services that use the server's shared `.local` or IP address. For local access, set up a private domain on the **Web UI** interface. [StartOS private domain setup](https://docs.start9.com/start-os/private-domains.html#adding-a-private-domain)
+
 ## What StartOS manages
 
 - PostgreSQL data is stored in a dedicated service volume.
